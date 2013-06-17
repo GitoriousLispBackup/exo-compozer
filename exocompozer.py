@@ -14,6 +14,10 @@ except:
     print ("Error: This program needs PySide module.", file=sys.stderr)
     sys.exit(1)
 
+eq = {  "Normal - Dotted": "NormDot",
+        "Normal - Graph": "NormGraph",
+        "Graph - Normal": "GraphNorm"}
+
 
 class Compozer(QMainWindow):
     """ Display all exercices listed in save/ dir """
@@ -46,7 +50,7 @@ class Compozer(QMainWindow):
         self.createFreeExo = QAction("New Free", self, \
                                       triggered=self.newFreeExo)
         self.removeExo = QAction("Remove Entry", self, \
-                                      triggered=self.removeExo)
+                                      triggered=self.deleteExo)
 
     def createMenus(self):
         menu = self.menuBar().addMenu("Menu")
@@ -63,7 +67,7 @@ class Compozer(QMainWindow):
         """ Create main tab widget """
         # ~ widget = QWidget()
 
-        tabWidget = QTabWidget()
+        self.tabWidget = QTabWidget()
 
         self.tabND = QTableWidget()  # ~ Normal - Dotted
         self.tabND.setColumnCount(2)
@@ -71,6 +75,7 @@ class Compozer(QMainWindow):
         self.tabND.setColumnWidth(1, 120)
         self.tabND.horizontalHeader().setResizeMode(0, QHeaderView.Stretch);
         self.tabND.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tabND.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.tabNG = QTableWidget()  # ~ Normal - Graph
         self.tabNG.setColumnCount(2)
@@ -78,6 +83,7 @@ class Compozer(QMainWindow):
         self.tabNG.setColumnWidth(1, 120)
         self.tabNG.horizontalHeader().setResizeMode(0, QHeaderView.Stretch);
         self.tabNG.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tabNG.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.tabGN = QTableWidget()  # ~ Graph - Normal
         self.tabGN.setColumnCount(2)
@@ -85,17 +91,18 @@ class Compozer(QMainWindow):
         self.tabGN.setColumnWidth(1, 120)
         self.tabGN.horizontalHeader().setResizeMode(0, QHeaderView.Stretch);
         self.tabGN.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tabGN.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-        tabWidget.addTab(self.tabND, "Normal - Dotted")
-        tabWidget.addTab(self.tabNG, "Normal - Graph")
-        tabWidget.addTab(self.tabGN, "Graph - Normal")
+        self.tabWidget.addTab(self.tabND, "Normal - Dotted")
+        self.tabWidget.addTab(self.tabNG, "Normal - Graph")
+        self.tabWidget.addTab(self.tabGN, "Graph - Normal")
 
         self.tabND.itemDoubleClicked.connect(self.editExoND)
         self.tabNG.itemDoubleClicked.connect(self.editExoNG)
         self.tabGN.itemDoubleClicked.connect(self.editExoGN)
 
         # ~ widget.addWidget(tabWidget)
-        return tabWidget
+        return self.tabWidget
 
     def clearAll(self):
         self.tabND.clearContents()
@@ -113,14 +120,20 @@ class Compozer(QMainWindow):
             if mode == "NormDot":
                 self.tabND.setRowCount(self.tabND.rowCount() + 1)
                 self.tabND.setItem(self.tabND.rowCount() - 1, 0, \
+                                    QTableWidgetItem(f.split("_")[2]))
+                self.tabND.setItem(self.tabND.rowCount() - 1, 1, \
                                     QTableWidgetItem(f.split("_")[1]))
             elif mode == "NormGraph":
                 self.tabNG.setRowCount(self.tabNG.rowCount() + 1)
                 self.tabNG.setItem(self.tabNG.rowCount() - 1, 0, \
+                                    QTableWidgetItem(f.split("_")[2]))
+                self.tabNG.setItem(self.tabNG.rowCount() - 1, 1, \
                                     QTableWidgetItem(f.split("_")[1]))
             elif mode == "GraphNorm":
                 self.tabGN.setRowCount(self.tabGN.rowCount() + 1)
                 self.tabGN.setItem(self.tabGN.rowCount() - 1, 0, \
+                                    QTableWidgetItem(f.split("_")[2]))
+                self.tabGN.setItem(self.tabGN.rowCount() - 1, 1, \
                                     QTableWidgetItem(f.split("_")[1]))
 
     def displayDifficulty(self):
@@ -131,26 +144,35 @@ class Compozer(QMainWindow):
                 text += "*"
         return text
 
-    def removeExo(self):
-        pass
+    def deleteExo(self):
+        #~ Get file type
+        exo_type = eq[self.tabWidget.tabText(self.tabWidget.currentWidget().currentRow())]
+        #~ Get file name
+        exo_name = self.tabWidget.currentWidget().item(self.tabWidget.currentWidget().currentRow(), 0).text()
+        #~ Get diff
+        exo_diff = self.tabWidget.currentWidget().item(self.tabWidget.currentWidget().currentRow(), 1).text()
+        #~ Remove file
+        os.remove("save/{0}_{1}_{2}".format(exo_type, exo_diff, exo_name))
 
-    def editExoND(self, item):
-        """ Modal autoloaded window for editing """
-        newDotNormExo(self, item.text())
+        self.tabWidget.currentWidget().removeRow(self.tabWidget.currentWidget().currentRow())
 
-    def editExoNG(self, item):
+    def editExoND(self, item, diff=1):
         """ Modal autoloaded window for editing """
-        newNormGraphExo(self, item.text())
+        NewNormDotExo(self, item.text(), int(self.tabND.item(item.row(), 1).text()))
 
-    def editExoGN(self, item):
+    def editExoNG(self, item, diff=1):
         """ Modal autoloaded window for editing """
-        newGraphNormExo(self, item.text())
+        NewNormGraphExo(self, item.text(), int(self.tabNG.item(item.row(), 1).text()))
+
+    def editExoGN(self, item, diff=1):
+        """ Modal autoloaded window for editing """
+        NewGraphNormExo(self, item.text(), int(self.tabGN.item(item.row(), 1).text()))
 
     def newDotNormExo(self):
-        newDotNormExo(self)
+        NewDotNormExo(self)
 
     def newNormGraphExo(self):
-        newNormGraphExo(self)
+        NewNormGraphExo(self)
 
     def newGraphNormExo(self):
         pass
@@ -158,9 +180,6 @@ class Compozer(QMainWindow):
     def newFreeExo(self):
         pass
 
-
-class newGraphNormExo(QDialog):
-    pass
 
 if __name__ == '__main__':
 

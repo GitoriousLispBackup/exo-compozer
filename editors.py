@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import re
+import os
 
 try:
     from PySide.QtCore import *
@@ -10,12 +12,17 @@ except:
     print ("Error: This program needs PySide module.", file=sys.stderr)
     sys.exit(1)
 
-
-class newDotNormExo(QDialog):
+class NewNormDotExo(QDialog):
     """ Modal widget to create and edit Normal<->Dotted exercices """
 
-    def __init__(self, parent, item=""):
+    def __init__(self, parent, item="", diff=1):
         super().__init__(parent)
+
+        self.diff = diff
+
+        #~ To remove the prev file when changing name/diff
+        #~ of a loaded file
+        self.prev_file = ""
 
         self.setResult(0)
         self.finished.connect(parent.populate)
@@ -23,6 +30,13 @@ class newDotNormExo(QDialog):
         self.setGeometry(300, 300, 500, 400)
         name_label = QLabel("Nom du fichier")
         self.name_field = QLineEdit()
+
+        #~ Should be auto or not ?
+        difficulty_label = QLabel("Difficulté")
+        self.difficulty_value = QSpinBox()
+        self.difficulty_value.setMinimum(1)
+        self.difficulty_value.setMaximum(10)
+        self.difficulty_value.setValue(self.diff)
 
         list_add_btn = QPushButton("Ajouter")
         list_rm_btn = QPushButton("Supprimer")
@@ -39,6 +53,8 @@ class newDotNormExo(QDialog):
         layout = QGridLayout()
         layout.addWidget(name_label, 0, 0)
         layout.addWidget(self.name_field, 0, 1)
+        layout.addWidget(difficulty_label, 1, 0)
+        layout.addWidget(self.difficulty_value, 1, 1)
         layout.addWidget(self.list_widget, 5, 0, 1, 2)
         layout.addWidget(list_add_btn, 6, 0)
         layout.addWidget(list_rm_btn, 6, 1)
@@ -104,7 +120,7 @@ class newDotNormExo(QDialog):
     def save(self):
         if self.name_field.text() is not "":
             if self.list_widget.rowCount() > 0:
-                location = 'save/NormDot_{0}'.format(self.name_field.text())
+                location = 'save/NormDot_{0}_{1}'.format(self.difficulty_value.value(), self.name_field.text())
                 file = open(location, 'w+')
                 try:
                     file.write("# Normal/Dotted serie\n")
@@ -114,11 +130,14 @@ class newDotNormExo(QDialog):
                         file.write("\n")
                 finally:
                     file.close()
+                    if self.prev_file is not "":
+                        os.remove(self.prev_file)
                 self.done(1)
 
     # ~ Also need de-serial
     def load(self, exo):
-        location = 'save/NormDot_{0}'.format(exo)
+        location = 'save/NormDot_{0}_{1}'.format(self.diff, exo)
+        self.prev_file = location
         self.name_field.setText(exo)
         try:
             file = open(location, 'r+')
@@ -127,17 +146,24 @@ class newDotNormExo(QDialog):
 
             for line in file:
                 self.add(line.rstrip('\n\r').split("\t")[1])
+
+            file.close()
         except IOError as e:
             print(e)
-        finally:
-            file.close()
+            self.done(0)
 
 
-class newNormGraphExo(QDialog):
+class NewNormGraphExo(QDialog):
     """ Modal widget to create and edit Normal->Graph exercices """
 
-    def __init__(self, parent, item=""):
+    def __init__(self, parent, item="", diff=1):
         super().__init__(parent)
+
+        self.diff = diff_texts
+
+        #~ To remove the prev file when changing name/diff
+        #~ of a loaded file
+        self.prev_file = ""
 
         self.setResult(0)
         self.finished.connect(parent.populate)
@@ -145,6 +171,12 @@ class newNormGraphExo(QDialog):
         self.setGeometry(300, 300, 500, 400)
         name_label = QLabel("Nom du fichier")
         self.name_field = QLineEdit()
+
+        #~ Should be auto or not ?
+        difficulty_label = QLabel("Difficulté")
+        self.difficulty_value = QSpinBox()
+        self.difficulty_value.setMinimum(1)
+        self.difficulty_value.setMaximum(10)
 
         list_add_btn = QPushButton("Ajouter")
         list_rm_btn = QPushButton("Supprimer")
@@ -161,6 +193,8 @@ class newNormGraphExo(QDialog):
         layout = QGridLayout()
         layout.addWidget(name_label, 0, 0)
         layout.addWidget(self.name_field, 0, 1)
+        layout.addWidget(difficulty_label, 1, 0)
+        layout.addWidget(self.difficulty_value, 1, 1)
         layout.addWidget(self.list_widget, 5, 0, 1, 2)
         layout.addWidget(list_add_btn, 6, 0)
         layout.addWidget(list_rm_btn, 6, 1)
@@ -226,11 +260,14 @@ class newNormGraphExo(QDialog):
                         file.write("\n")
                 finally:
                     file.close()
+                    if self.prev_file is not "":
+                        os.remove(self.prev_file)
                 self.done(1)
 
     # ~ Also need de-serial
     def load(self, exo):
-        location = 'save/NormGraph_{0}'.format(exo)
+        location = 'save/NormGraph_{0}_{1}'.format(self.diff, exo)
+        self.prev_file = location
         self.name_field.setText(exo)
         try:
             file = open(location, 'r+')
@@ -239,7 +276,13 @@ class newNormGraphExo(QDialog):
 
             for line in file:
                 self.add(line.rstrip('\n\r'))
+
+            file.close()
         except IOError as e:
             print(e)
-        finally:
-            file.close()
+            self.done(0)
+
+
+
+class NewGraphNormExo(QDialog):
+    pass
