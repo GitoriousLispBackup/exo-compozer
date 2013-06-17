@@ -51,6 +51,8 @@ class Compozer(QMainWindow):
                                       triggered=self.newFreeExo)
         self.removeExo = QAction("Remove Entry", self, \
                                       triggered=self.deleteExo)
+        self.removeAllExo = QAction("Remove _All_ Entry", self, \
+                                      triggered=self.deleteAllExo)
 
     def createMenus(self):
         menu = self.menuBar().addMenu("Menu")
@@ -60,6 +62,8 @@ class Compozer(QMainWindow):
         menu.addAction(self.createFreeExo)
         menu.addSeparator()
         menu.addAction(self.removeExo)
+        menu.addSeparator()
+        menu.addAction(self.removeAllExo)
         menu.addSeparator()
         menu.addAction(self.quitAction)
 
@@ -77,7 +81,6 @@ class Compozer(QMainWindow):
         self.tabND.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tabND.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabND.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.tabND.setSortingEnabled(True)
 
         self.tabNG = QTableWidget()  # ~ Normal - Graph
         self.tabNG.setColumnCount(2)
@@ -87,7 +90,6 @@ class Compozer(QMainWindow):
         self.tabNG.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tabNG.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabNG.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #~ self.tabNG.setSortingEnabled(True)
 
         self.tabGN = QTableWidget()  # ~ Graph - Normal
         self.tabGN.setColumnCount(2)
@@ -97,15 +99,10 @@ class Compozer(QMainWindow):
         self.tabGN.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tabGN.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabGN.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #~ self.tabGN.setSortingEnabled(True)
 
         self.tabWidget.addTab(self.tabND, "Normal - Dotted")
         self.tabWidget.addTab(self.tabNG, "Normal - Graph")
         self.tabWidget.addTab(self.tabGN, "Graph - Normal")
-
-        #~ self.tabND.itemDoubleClicked.connect(self.editExoND)
-        #~ self.tabNG.itemDoubleClicked.connect(self.editExoNG)
-        #~ self.tabGN.itemDoubleClicked.connect(self.editExoGN)
 
         self.tabND.itemDoubleClicked.connect(self.editExo)
         self.tabNG.itemDoubleClicked.connect(self.editExo)
@@ -129,6 +126,7 @@ class Compozer(QMainWindow):
             mode = f.split("_")[0]
 
             enonce = QTableWidgetItem(f.split("_")[2])
+            #~ Custom class for sorting
             diff = IntQTableWidgetItem()
             diff.setData(Qt.EditRole, str(f.split("_")[1]))
 
@@ -162,7 +160,7 @@ class Compozer(QMainWindow):
 
     def deleteExo(self):
         #~ Get file type
-        exo_type = eq[self.tabWidget.tabText(self.tabWidget.currentWidget().currentRow())]
+        exo_type = eq[self.tabWidget.tabText(self.tabWidget.currentWidget())]
         #~ Get file name
         exo_name = self.tabWidget.currentWidget().item(self.tabWidget.currentWidget().currentRow(), 0).text()
         #~ Get diff
@@ -171,6 +169,25 @@ class Compozer(QMainWindow):
         os.remove("save/{0}_{1}_{2}".format(exo_type, exo_diff, exo_name))
 
         self.tabWidget.currentWidget().removeRow(self.tabWidget.currentWidget().currentRow())
+
+    def deleteAllExo(self):
+        #~ Why delete all ?
+        for i in range(0, self.tabWidget.count()):
+            tab = self.tabWidget.widget(i)
+
+            #~ Get file type
+            exo_type = eq[self.tabWidget.tabText(i)]
+
+            for row in range(0, tab.rowCount()):
+                #~ Get file name
+                exo_name = tab.item(row, 0).text()
+                #~ Get diff
+                exo_diff = tab.item(row, 1).text()
+                #~ Remove file
+                print("save/{0}_{1}_{2}".format(exo_type, exo_diff, exo_name))
+                os.remove("save/{0}_{1}_{2}".format(exo_type, exo_diff, exo_name))
+
+                tab.removeRow(row)
 
     def editExo(self, item):
         exo_type = eq[self.tabWidget.tabText(self.tabWidget.currentWidget().currentRow())]
