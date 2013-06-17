@@ -4,8 +4,8 @@
 import sys
 import os
 
-from editors import newDotNormExo
-from editors import newNormGraphExo
+from editors import NewNormDotExo
+from editors import NewNormGraphExo
 
 try:
     from PySide.QtCore import *
@@ -42,7 +42,7 @@ class Compozer(QMainWindow):
     def createActions(self):
         self.quitAction = QAction("Quitter", self, triggered=self.close)
         self.createDotNormExo = QAction("New Norm->Dotted", self, \
-                                         triggered=self.newDotNormExo)
+                                         triggered=self.newNormDotExo)
         self.createNormGraphExo = QAction("New Norm->Graph", self, \
                                            triggered=self.newNormGraphExo)
         self.createGraphNormExo = QAction("New Graph->Norm", self, \
@@ -75,7 +75,9 @@ class Compozer(QMainWindow):
         self.tabND.setColumnWidth(1, 120)
         self.tabND.horizontalHeader().setResizeMode(0, QHeaderView.Stretch);
         self.tabND.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tabND.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabND.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tabND.setSortingEnabled(True)
 
         self.tabNG = QTableWidget()  # ~ Normal - Graph
         self.tabNG.setColumnCount(2)
@@ -83,7 +85,9 @@ class Compozer(QMainWindow):
         self.tabNG.setColumnWidth(1, 120)
         self.tabNG.horizontalHeader().setResizeMode(0, QHeaderView.Stretch);
         self.tabNG.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tabNG.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabNG.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        #~ self.tabNG.setSortingEnabled(True)
 
         self.tabGN = QTableWidget()  # ~ Graph - Normal
         self.tabGN.setColumnCount(2)
@@ -91,15 +95,21 @@ class Compozer(QMainWindow):
         self.tabGN.setColumnWidth(1, 120)
         self.tabGN.horizontalHeader().setResizeMode(0, QHeaderView.Stretch);
         self.tabGN.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tabGN.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tabGN.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        #~ self.tabGN.setSortingEnabled(True)
 
         self.tabWidget.addTab(self.tabND, "Normal - Dotted")
         self.tabWidget.addTab(self.tabNG, "Normal - Graph")
         self.tabWidget.addTab(self.tabGN, "Graph - Normal")
 
-        self.tabND.itemDoubleClicked.connect(self.editExoND)
-        self.tabNG.itemDoubleClicked.connect(self.editExoNG)
-        self.tabGN.itemDoubleClicked.connect(self.editExoGN)
+        #~ self.tabND.itemDoubleClicked.connect(self.editExoND)
+        #~ self.tabNG.itemDoubleClicked.connect(self.editExoNG)
+        #~ self.tabGN.itemDoubleClicked.connect(self.editExoGN)
+
+        self.tabND.itemDoubleClicked.connect(self.editExo)
+        self.tabNG.itemDoubleClicked.connect(self.editExo)
+        self.tabGN.itemDoubleClicked.connect(self.editExo)
 
         # ~ widget.addWidget(tabWidget)
         return self.tabWidget
@@ -117,24 +127,30 @@ class Compozer(QMainWindow):
         self.clearAll()
         for f in os.listdir("save/"):
             mode = f.split("_")[0]
+
+            enonce = QTableWidgetItem(f.split("_")[2])
+            diff = IntQTableWidgetItem()
+            diff.setData(Qt.EditRole, str(f.split("_")[1]))
+
+            diff.setFlags(Qt.ItemIsSelectable)
+
             if mode == "NormDot":
                 self.tabND.setRowCount(self.tabND.rowCount() + 1)
-                self.tabND.setItem(self.tabND.rowCount() - 1, 0, \
-                                    QTableWidgetItem(f.split("_")[2]))
-                self.tabND.setItem(self.tabND.rowCount() - 1, 1, \
-                                    QTableWidgetItem(f.split("_")[1]))
+                self.tabND.setItem(self.tabND.rowCount() - 1, 0, enonce)
+                self.tabND.setItem(self.tabND.rowCount() - 1, 1, diff)
             elif mode == "NormGraph":
                 self.tabNG.setRowCount(self.tabNG.rowCount() + 1)
-                self.tabNG.setItem(self.tabNG.rowCount() - 1, 0, \
-                                    QTableWidgetItem(f.split("_")[2]))
-                self.tabNG.setItem(self.tabNG.rowCount() - 1, 1, \
-                                    QTableWidgetItem(f.split("_")[1]))
+                self.tabNG.setItem(self.tabNG.rowCount() - 1, 0, enonce)
+                self.tabNG.setItem(self.tabNG.rowCount() - 1, 1, diff)
+
             elif mode == "GraphNorm":
                 self.tabGN.setRowCount(self.tabGN.rowCount() + 1)
-                self.tabGN.setItem(self.tabGN.rowCount() - 1, 0, \
-                                    QTableWidgetItem(f.split("_")[2]))
-                self.tabGN.setItem(self.tabGN.rowCount() - 1, 1, \
-                                    QTableWidgetItem(f.split("_")[1]))
+                self.tabGN.setItem(self.tabGN.rowCount() - 1, 0, enonce)
+                self.tabGN.setItem(self.tabGN.rowCount() - 1, 1, diff)
+
+        self.tabND.sortItems(1)
+        self.tabNG.sortItems(1)
+        self.tabGN.sortItems(1)
 
     def displayDifficulty(self):
         difficulty = 5
@@ -156,30 +172,29 @@ class Compozer(QMainWindow):
 
         self.tabWidget.currentWidget().removeRow(self.tabWidget.currentWidget().currentRow())
 
-    def editExoND(self, item, diff=1):
-        """ Modal autoloaded window for editing """
-        NewNormDotExo(self, item.text(), int(self.tabND.item(item.row(), 1).text()))
+    def editExo(self, item):
+        exo_type = eq[self.tabWidget.tabText(self.tabWidget.currentWidget().currentRow())]
+        params = "self, item.text(), int(self.tabWidget.currentWidget().item(item.row(), 1).text())"
+        class_call = "New{0}Exo({1})".format(exo_type, params)
+        #~ C'est moche ça
+        eval(class_call)
 
-    def editExoNG(self, item, diff=1):
-        """ Modal autoloaded window for editing """
-        NewNormGraphExo(self, item.text(), int(self.tabNG.item(item.row(), 1).text()))
-
-    def editExoGN(self, item, diff=1):
-        """ Modal autoloaded window for editing """
-        NewGraphNormExo(self, item.text(), int(self.tabGN.item(item.row(), 1).text()))
-
-    def newDotNormExo(self):
-        NewDotNormExo(self)
+    def newNormDotExo(self):
+        NewNormDotExo(self)
 
     def newNormGraphExo(self):
         NewNormGraphExo(self)
 
     def newGraphNormExo(self):
-        pass
+        NewGraphNormExo(self)
 
     def newFreeExo(self):
         pass
 
+class IntQTableWidgetItem(QTableWidgetItem):
+    """ QTableWidget can't sort integers, must reimplement this """
+    def __lt__(self, other):
+        return (int(self.data(Qt.EditRole)) < int(other.data(Qt.EditRole)))
 
 if __name__ == '__main__':
 

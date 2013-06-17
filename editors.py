@@ -12,6 +12,17 @@ except:
     print ("Error: This program needs PySide module.", file=sys.stderr)
     sys.exit(1)
 
+class InfoWindows(QMessageBox):
+    """ Simple informative modal message """
+    def __init__(self, text):
+        super().__init__()
+
+        self.setText(text)
+
+        self.setModal(True)
+        self.exec_()
+
+
 class NewNormDotExo(QDialog):
     """ Modal widget to create and edit Normal<->Dotted exercices """
 
@@ -94,7 +105,6 @@ class NewNormDotExo(QDialog):
         qdot.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
         # ~ qdot.setFlags(Qt.ItemIsUserCheckable)
         qdot.setCheckState(state)
-        qdot.setText("coucou")
 
         # ~ On ajoute une ligne
         # ~ Les rowCount ont un décalage de 1 Oo"
@@ -104,6 +114,7 @@ class NewNormDotExo(QDialog):
         self.list_widget.setItem(self.list_widget.rowCount() - 1, 1, qi)
 
     def delete(self):
+        """ Delete the current item """
         self.list_widget.removeRow(self.list_widget.currentRow())
 
     def verify(self, item):
@@ -111,12 +122,21 @@ class NewNormDotExo(QDialog):
         if (item.text() == "") and (item.column() == 1):
             item.setText("None")
 
+    #~ def fileExist(self, item):
+        #~ for f in os.listdir("save/"):
+            #~ if f.split('_')[2] == item:
+                #~ return True
+            #~ else:
+                #~ return False
+
     # ~ Cute iterator creator
     def iterAllItems(self):
         for i in range(self.list_widget.rowCount()):
             yield self.list_widget.item(i, 0), self.list_widget.item(i, 1)
 
-    # ~ Save to file, need to be serialized
+    # ~ Save to file, need to be serialized ?
+    #~ Should be validated
+    #~ Erase an existing file if same name, should ask
     def save(self):
         if self.name_field.text() is not "":
             if self.list_widget.rowCount() > 0:
@@ -133,6 +153,10 @@ class NewNormDotExo(QDialog):
                     if self.prev_file is not "":
                         os.remove(self.prev_file)
                 self.done(1)
+            else:
+                InfoWindows("Entrez au moins un exercice")
+        else:
+            InfoWindows("Entrez un nom de fichier")
 
     # ~ Also need de-serial
     def load(self, exo):
@@ -159,7 +183,7 @@ class NewNormGraphExo(QDialog):
     def __init__(self, parent, item="", diff=1):
         super().__init__(parent)
 
-        self.diff = diff_texts
+        self.diff = diff
 
         #~ To remove the prev file when changing name/diff
         #~ of a loaded file
@@ -177,6 +201,7 @@ class NewNormGraphExo(QDialog):
         self.difficulty_value = QSpinBox()
         self.difficulty_value.setMinimum(1)
         self.difficulty_value.setMaximum(10)
+        self.difficulty_value.setValue(self.diff)
 
         list_add_btn = QPushButton("Ajouter")
         list_rm_btn = QPushButton("Supprimer")
@@ -250,7 +275,7 @@ class NewNormGraphExo(QDialog):
     def save(self):
         if self.name_field.text() is not "":
             if self.list_widget.rowCount() > 0:
-                location = 'save/NormGraph_{0}'.format(self.name_field.text())
+                location = 'save/NormGraph_{0}_{1}'.format(self.difficulty_value.value(), self.name_field.text())
                 file = open(location, 'w+')
                 try:
                     file.write("# Normal/Graph serie\n")
@@ -263,6 +288,10 @@ class NewNormGraphExo(QDialog):
                     if self.prev_file is not "":
                         os.remove(self.prev_file)
                 self.done(1)
+            else:
+                InfoWindows("Entrez au moins un exercice")
+        else:
+            InfoWindows("Entrez un nom de fichier")
 
     # ~ Also need de-serial
     def load(self, exo):
